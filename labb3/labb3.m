@@ -4,6 +4,7 @@ k = 0:1:100;
 s = sin(k/10);
 figure(1);plot(s);
 title('Signal (s) sin(k)')
+
 %% Signal for part 4
 
 cert = double(rand(1,101)>0.2);
@@ -34,7 +35,7 @@ a = exp(-x.^2/4);
 figure(2);
 subplot(4,1,4);plot(a,'-o');
 title('Plot of a')
-
+%%
 f0 = b0.*a; f0 = f0(end:-1:1);
 f1 = b1.*a; f1 = f1(end:-1:1);
 f2 = b2.*a; f2 = f2(end:-1:1);
@@ -53,24 +54,26 @@ h2 = conv(s,f2,'same');
 G0 = diag(a)
 B = [b0 b1 b2];
 G = B'*G0*B
+%% Considers uncertainty
+%a_cert = a'.* cert(1:7)
+%G0_cert = diag(a_cert)
+%B_cert = [b0 b1];
+%G_cert = B_cert'*G0_cert*B_cert
 
-a_cert = a'.* cert(1:7)
-G0_cert = diag(a_cert)
-B_cert = [b0 b1];
-G_cert = B_cert'*G0_cert*B_cert
 
-h = b0.*a
-G11 = conv(cert, b0.*a.*b0)
-G12 = conv(b0.*a.*b1, cert)
-G22 = conv(b1.*a.*b1, cert)
+G11 = conv(cert, flip(b0.*a.*b0),'same')
+G12 = conv(cert, flip(b0.*a.*b1),'same')
+G22 = conv(cert, flip(b1.*a.*b1),'same')
 
 detG = G11.*G22-G12.^2;
-c0 = (G22.*h0-G12.*h1)./detG;
-%c1 = (-G12.*h0+G11.*h1)./detG; figure(7);
-%subplot(2,1,1);plot(c0)
-%subplot(2,1,2);plot(c1)
+c0 = (G22.*h0-G12.*h1)./detG
+c1 = (-G12.*h0+G11.*h1)./detG 
+figure(21);
+subplot(2,1,1);plot(c0)
+title('C with uncertainty')
+subplot(2,1,2);plot(c1)
 
-%%
+%% Creates c without consideration to uncertainty
 c = inv(G)*[h0;h1;h2];
 figure(8);
 
@@ -107,22 +110,22 @@ subplot(3,1,3);plot(h2_t)
 %% 
 
 im = double(imread('Scalespace0.png'));
-figure(8);colormap(gray);imagesc(im);
+figure(8);colormap(gray);imagesc(im);title('Original');
 
-cert = double(rand(size(im)) > 0.90); imcert = im.*cert;
-figure(9);colormap(gray);imagesc(imcert);
+cert = double(rand(size(im)) > 0.60); imcert = im.*cert;
+figure(9);colormap(gray);imagesc(imcert);title('Image * cert')
 
-x = ones(9,1)*(-4:4)
+x = ones(7,1)*(-3:3)
 y = x'
 %a = exp(-(x.^2+y.^2)/4);
 %a = exp((0.7./(log(x.^2 + y.^2))+0.6)/10);
-a = exp((-(x.^2+y.^2))/8);
+a = exp((-(x.^2+y.^2))/4);
 figure(10);mesh(a);
 
 imlp = conv2(imcert, a, 'same');
-figure(11);colormap(gray);imagesc(imlp);
+figure(11);colormap(gray);imagesc(imlp); title('lowpass')
 
-G = conv2(cert, a, 'same');
+G = conv2(cert, flip(a), 'same');
 c = imlp./G;
-figure(12);colormap(gray);imagesc(c);
-figure(13);colormap(gray);imagesc(G);
+figure(14);colormap(gray);imagesc(c);title('Reconstructed');
+figure(13);colormap(gray);imagesc(G);title('G');
