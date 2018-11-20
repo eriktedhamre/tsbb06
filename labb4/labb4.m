@@ -111,10 +111,94 @@ for k=1:size(y1_trans,2),
 end
 %%
 
-[y1_v2,y2_v2]=correspondences_select(im1,im2);
-y1_v2(end+1,:)=1;
-y2_v2(end+1,:)=1;
+[y1_v1,y2_v1]=correspondences_select(im1,im2);
+y1_v1(end+1,:)=1;
+y2_v1(end+1,:)=1;
 %%
-F = fmatrix_nn8pa(y1_v1,y2_v1)
+F = fmatrix_n8pa(y1_v1,y2_v1)
+%%
+figure(6);clf;
+subplot(1,2,1);image(im1);hold on;
+subplot(1,2,2);image(im2);hold on;
+
+l2_8p=F*y1_v1;
+l1_8p=F'*y2_v1;
+
+for k=1:size(y1_v1,2),
+    l1_8p(:,k)=-l1_8p(:,k)/norm(l1_8p(1:2,k))*sign(l1_8p(3,k)); %Normalise dual
+    l2_8p(:,k)=-l2_8p(:,k)/norm(l2_8p(1:2,k))*sign(l2_8p(3,k)); %homog. coord.
+end
+
+for k=1:size(y1_v1,2),
+    subplot(1,2,1);plot(y1_v1(1,k),y1_v1(2,k),'or');drawline(l1_8p(:,k));
+    subplot(1,2,2);plot(y2_v1(1,k),y2_v1(2,k),'or');drawline(l2_8p(:,k));
+end
+dist_im1_8p = mean(abs(sum(y1_v1.*l1_8p)))
+dist_im2_8p = mean(abs(sum(y2_v1.*l2_8p)))
 
 
+dist_im1 = mean(abs(sum(y1.*l1)))
+dist_im2 = mean(abs(sum(y2.*l2)))
+
+%% Part 5 Triangulation
+
+load('tridata','x','y1','y2','im1','im2','C1','C2');
+
+figure(1);image([im1 im2]);
+colormap(gray(256));hold on;
+for k=1:size(y1,2),
+    plot(y1(2,k),y1(1,k),'ro');
+    plot(y2(2,k)+size(im1,2),y2(1,k),'ro');
+end
+hold off;
+
+xrec=[];
+for ix=1:length(y1),
+    
+    [U,S,V] = svd([liu_crossop(y1(:,ix))*C1; liu_crossop(y2(:,ix))*C2]);
+    V_last = V(:,end);
+    recpoint = V_last/V_last(4);
+    xrec=[xrec recpoint];
+end
+
+figure(3);plot3(xrec(1,:),xrec(2,:),xrec(3,:),'o');
+
+er = [];
+for ind=1:size(xrec,2),
+    curr_er = sqrt(sum((x(:, ind)-xrec(:, ind)).^2));
+    er = [er curr_er];
+end
+x_mean = sum(er)/size(er,2)
+x_std = std(er)
+
+%%
+y1_rec = C1*xrec;
+y2_rec = C2*xrec;
+
+y1_n_rec = [];
+y2_n_rec = [];
+for i=1:size(xrec,2),
+    y1_n = C1*xrec(:, i);
+    y1_n_rec = [y1_n_rec y1_n/y1_n(3)];
+    y2_n = C2*xrec(:, i);
+    y2_n_rec = [y2_n_rec y2_n/y2_n(3)];
+end
+
+er= [];
+for ind=1:size(y2_n_rec,2),
+    curr_er = sqrt(sum( (y2(:, ind)-y2_n_rec(:, ind)).^2));
+    er = [er curr_er];
+end
+
+proj_mean_y2 = sum(er)/size(er,2)
+proj_std_y2 = std(er)
+
+
+er= [];
+for ind=1:size(y1_n_rec,2),
+    curr_er = sqrt(sum( (y1(:, ind)-y1_n_rec(:, ind)).^2));
+    er = [er curr_er];
+end
+
+proj_mean_y1 = sum(er)/size(er,2)
+proj_std_y1 = std(er)
