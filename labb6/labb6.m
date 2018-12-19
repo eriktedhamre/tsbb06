@@ -1,11 +1,14 @@
 %% 3.1 Down-sampling and reconstruction of a discrete signal
 
 s=randn(1024,1);
+%%
 S=fftshift(fft(s));
 u=(-512:511)'*pi/512;
 Rect8=(abs(u)<pi/8);
 Sbl=S.*Rect8; %Create a pi/4-band-limited transform
+
 sbl=ifft(ifftshift(Sbl));
+
 figure(1);subplot(2,1,1);plot(0:1023,sbl);
 title('band-limited signal');
 subplot(2,1,2);plot(u,abs(Sbl));
@@ -146,6 +149,12 @@ err=sbl-sblrec4f;
 fprintf('Reconstruction from factor 4 down-sampled signal (frame)\n');
 fprintf('Reconstruction error: mean %f std %f\n',mean(err),std(err));
 
+%%
+[U SB V] = svd(B4);
+eigB =diag(SB)
+
+[U SF V] = svd(F8);
+eigF = diag(SF)
 %% 4 DWT of 1D signals
 
 l=256;
@@ -154,6 +163,7 @@ s0=rand(1,l);
 S0=fftshift(fft(ifftshift(s0)));
 S=S0.*(abs(u)<pi/4);
 s=real(ifftshift(ifft(fftshift(S))));
+%%
 figure(1);plot(0:255,s);
 title('Input signal');
 
@@ -167,7 +177,7 @@ subplot(4,1,2);plot(u1,abs(fftshift(fft(g0))));title('FT of g0');
 subplot(4,1,3);plot(u1,abs(fftshift(fft(h1))));title('FT of h1');
 subplot(4,1,4);plot(u1,abs(fftshift(fft(g1))));title('FT of g1');
 
-%%
+%% TESTING 
 figure(3)
 subplot(4,1,1);plot(h0);title('Signal domain of h0');
 subplot(4,1,2);plot(h1);title('Signal domain of h1');
@@ -205,15 +215,35 @@ figure(6);plot(srec2);title('Reconstructed signal');
 
 %%
 % Code snippet (A)
-N=5;ad=s;p=length(s);figure(7);
+N=2;ad=s;p=length(s);figure(7);
+p
 for cnt=1:N,
-[a d]=dwt(ad(1:p),h0,g0);
-ad(1:p)=[a d];
-subplot(N+1,1,N+2-cnt);
-plot(d);title(sprintf('details level %d',cnt));
-p=p/2;
+    [a d]=dwt(ad(1:p),h0,g0);
+    a
+    d
+    ad(1:p)=[a d];
+    ad
+    subplot(N+1,1,N+2-cnt);
+    plot(d);title(sprintf('details level %d',cnt));
+    p=p/2;
 end
 subplot(N+1,1,1);plot(a);
 title(sprintf('approximation level %d',cnt));
 figure(8);plot(ad);
 title('Concatenated approximation and details');
+%% 4.3 Simple signal compression
+
+q = [16 3;16 2;16 1;16 0.1];  %Change this if needed
+[ad bps] = quantisead(ad,q);  %Replace the channels with quantised values
+
+%%
+% Code snippet (B)
+for cnt=1:N,
+    ad(1:(2*p))=idwt(ad(1:p),ad((p+1):(2*p)),h1,g1);
+    p=2*p;
+end
+figure(9);plot(ad);title('Reconstructed signal');
+
+err=s-ad;
+
+fprintf('Reconstruction error: mean %f std %f\n',mean(err),std(err));
