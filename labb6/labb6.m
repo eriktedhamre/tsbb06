@@ -215,14 +215,10 @@ figure(6);plot(srec2);title('Reconstructed signal');
 
 %%
 % Code snippet (A)
-N=2;ad=s;p=length(s);figure(7);
-p
+N=3;ad=s;p=length(s);figure(7);
 for cnt=1:N,
     [a d]=dwt(ad(1:p),h0,g0);
-    a
-    d
     ad(1:p)=[a d];
-    ad
     subplot(N+1,1,N+2-cnt);
     plot(d);title(sprintf('details level %d',cnt));
     p=p/2;
@@ -231,12 +227,15 @@ subplot(N+1,1,1);plot(a);
 title(sprintf('approximation level %d',cnt));
 figure(8);plot(ad);
 title('Concatenated approximation and details');
-%% 4.3 Simple signal compression
+% 4.3 Simple signal compression
 
-q = [16 3;16 2;16 1;16 0.1];  %Change this if needed
+q = [3 0.3;
+    3 0.2;
+    2 0.1;
+    1 0.1];  %Change this if needed
 [ad bps] = quantisead(ad,q);  %Replace the channels with quantised values
 
-%%
+%
 % Code snippet (B)
 for cnt=1:N,
     ad(1:(2*p))=idwt(ad(1:p),ad((p+1):(2*p)),h1,g1);
@@ -247,3 +246,11 @@ figure(9);plot(ad);title('Reconstructed signal');
 err=s-ad;
 
 fprintf('Reconstruction error: mean %f std %f\n',mean(err),std(err));
+% SNR
+
+figure(100);
+subplot(3,1,1);plot(s);title('Original signal');
+subplot(3,1,2);plot(ad);title('Reconstructed signal');
+subplot(3,1,3);plot(s-ad);title('Difference');
+SNR=log10(max(s)/std(ad-s))*20
+bps
